@@ -4,6 +4,10 @@ from langchain_core.tools import tool
 from groq import Groq
 from config import GROQ_API_KEY, GROQ_MODEL, SPACY_MODEL
 import json
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def _llm_call(system: str, user: str) -> str:
@@ -44,7 +48,7 @@ def generate_summary(input: str = "") -> str:
     """Generate an executive summary of the document.
     Use this as the first step to understand what the document is about.
     No input required."""
-    print("\n[tools] Gerando resumo...")
+    logger.info("Gerando resumo...")
     text = _state["full_text"][:8000]
 
     summary = _llm_call(
@@ -59,7 +63,7 @@ def generate_summary(input: str = "") -> str:
 def extract_entities(input: str = "") -> str:
     """Extract structured entities from the document including authors, institutions,
     methodology, datasets and key results. No input required."""
-    print("\n[tools] Extraindo entidades...")
+    logger.info("Extraindo entidades...")
     text = _state["full_text"][:8000]
 
     response = _llm_call(
@@ -93,6 +97,8 @@ Text:
         _state["entities"] = entities
         return json.dumps(entities, indent=2)
     except json.JSONDecodeError:
+        logger.warning("Resposta do LLM não é JSON válido — armazenando texto bruto.")
+        logger.debug("Resposta bruta do LLM: %s", response)
         _state["entities"] = {"raw": response}
         return response
 
@@ -102,13 +108,14 @@ def analyze_nlp(input: str = "") -> str:
     """Run linguistic NLP analysis on the document using spaCy.
     Extracts named entities, top keywords and document statistics.
     No input required."""
-    print("\n[tools] Executando análise NLP...")
+    logger.info("Executando análise NLP...")
     import spacy
     from collections import Counter
 
     try:
         nlp = spacy.load(SPACY_MODEL)
     except OSError:
+        logger.warning("Modelo spaCy '%s' não encontrado — análise NLP ignorada.", SPACY_MODEL)
         return "spaCy model not found. Run: python -m spacy download en_core_web_sm"
 
     text = _state["full_text"][:100_000]
@@ -153,7 +160,7 @@ def analyze_nlp(input: str = "") -> str:
 def compare_with_literature(query: str) -> str:
     """Search the web to contextualize the paper within current literature.
     Input should be the paper title or main topic to search for."""
-    print(f"\n[tools] Comparando com literatura: '{query}'")
+    logger.info("Comparando com literatura: '%s'", query)
     try:
         from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
         search = DuckDuckGoSearchAPIWrapper()
@@ -161,6 +168,7 @@ def compare_with_literature(query: str) -> str:
         _state["literature_context"] = result
         return result
     except Exception as e:
+        logger.error("Erro na busca web: %s", e)
         return f"Erro na busca web: {e}"
 
 
@@ -168,7 +176,7 @@ def compare_with_literature(query: str) -> str:
 def generate_report(input: str = "") -> str:
     """Consolidate all collected insights into a final structured report.
     Use this as the last step after running all other tools. No input required."""
-    print("\n[tools] Gerando relatório final...")
+    logger.info("Gerando relatório final...")
 
     context = f"""
 Summary: {_state.get('summary', 'Not available')}

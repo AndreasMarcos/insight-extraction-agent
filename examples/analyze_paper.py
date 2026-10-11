@@ -4,6 +4,7 @@
 # Execução:
 #   python -m examples.analyze_paper
 
+import logging
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -14,6 +15,11 @@ from rag.store import delete_collection
 
 
 def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    )
+
     # ── ingestão ──────────────────────────────────────────────────────
     print("=== Resetando índice ===")
     delete_collection()

@@ -1,3 +1,4 @@
+import logging
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
@@ -14,6 +15,9 @@ from models import InsightReport
 from config import GROQ_API_KEY, GROQ_MODEL, AGENT_MAX_ITERATIONS
 
 
+logger = logging.getLogger(__name__)
+
+
 _agent = None
 
 
@@ -21,7 +25,7 @@ def _get_agent():
     """Inicializa o agente uma única vez (singleton)."""
     global _agent
     if _agent is None:
-        print("[agent] Inicializando agente...")
+        logger.info("Inicializando agente...")
         llm = ChatGroq(
             api_key=GROQ_API_KEY,
             model=GROQ_MODEL,
@@ -43,7 +47,7 @@ def _get_agent():
 
 
 def run_agent(filename: str, full_text: str) -> InsightReport:
-    print(f"\n[agent] Analisando: '{filename}'")
+    logger.info("Analisando: '%s'", filename)
 
     set_document(full_text)
     agent = _get_agent()
@@ -56,6 +60,7 @@ def run_agent(filename: str, full_text: str) -> InsightReport:
             config={"recursion_limit": AGENT_MAX_ITERATIONS},
         )
     except Exception as e:
+        logger.error("Erro ao executar o agente: %s", e)
         return InsightReport(
             filename=filename,
             final_report=f"Erro ao executar o agente: {e}",

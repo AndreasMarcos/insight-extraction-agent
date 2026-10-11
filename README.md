@@ -37,6 +37,7 @@ insight-extraction-agent/
 │   └── store.py          # integração com Qdrant
 ├── examples/
 │   └── analyze_paper.py  # exemplo de uso completo
+├── tests/                # testes unitários (offline, com mocks)
 ├── pipeline.py           # ingestão de documentos
 ├── models.py             # estruturas de dados
 └── config.py             # configurações centralizadas
@@ -88,7 +89,7 @@ Documento: attention.pdf
 
 **1. Clone o repositório**
 ```bash
-git clone https://github.com/seu-usuario/insight-extraction-agent.git
+git clone https://github.com/AndreasMarcos/insight-extraction-agent.git
 cd insight-extraction-agent
 ```
 
@@ -111,7 +112,11 @@ python -m spacy download en_core_web_sm
 
 **4. Configure as variáveis de ambiente**
 ```bash
-# crie o arquivo .env na raiz do projeto
+# copie o arquivo de exemplo e preencha sua chave
+cp .env.example .env
+```
+
+```
 GROQ_API_KEY=sua_chave_aqui
 ```
 
@@ -119,16 +124,13 @@ Obtenha uma API key gratuita em `https://console.groq.com`.
 
 **5. Suba o Qdrant com Docker**
 ```bash
-# Windows
-docker run --name qdrant-insight -p 6333:6333 -v D:\caminho\do\projeto\qdrant_storage:/qdrant/storage qdrant/qdrant
-
-# Linux/Mac
-docker run --name qdrant-insight -p 6333:6333 -v $(pwd)/qdrant_storage:/qdrant/storage qdrant/qdrant
+docker compose up -d
 ```
 
-Nas próximas vezes:
+O `docker-compose.yml` sobe o container `qdrant-insight` na porta `6333`,
+persistindo os dados em `./qdrant_storage`. Sem o Compose, use o equivalente:
 ```bash
-docker start qdrant-insight
+docker run --name qdrant-insight -p 6333:6333 -v $(pwd)/qdrant_storage:/qdrant/storage qdrant/qdrant
 ```
 
 **6. Execute o exemplo**
@@ -164,6 +166,17 @@ for step in report.steps:
     print(f"Observation: {step['observation']}")
 ```
 
+## Testes
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+Os testes rodam totalmente offline: o cliente Groq, a busca web, o spaCy,
+os embeddings e o Qdrant são substituídos por mocks. Não é necessário API key,
+conexão com a internet nem Qdrant em execução.
+
 ## Decisões de Design
 
 **Por que estado compartilhado entre ferramentas?**
@@ -191,3 +204,7 @@ Informações no final de papers longos podem não ser capturadas.
 
 **Dependência de internet** — a ferramenta `compare_with_literature` requer
 conexão ativa. Em caso de falha, o agente continua sem o contexto da literatura.
+
+## Licença
+
+Distribuído sob a licença MIT. Veja o arquivo [LICENSE](LICENSE).

@@ -1,0 +1,9 @@
+services:
+  qdrant:
+    image: qdrant/qdrant
+    container_name: qdrant-insight
+    ports:
+      - "6333:6333"
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
+    restart: unless-stopped
